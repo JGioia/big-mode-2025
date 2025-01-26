@@ -1,0 +1,6 @@
+COLOR_BACKGROUND = Color('#eeeee4')
+COLOR_FOREGROUND = Color('#11111b')
+COLOR_WIRE_ON = Color('#fee9b2')
+COLOR_WIRE_OFF = Color('#01164d')
+
+NODE_RADIUS = 20
