@@ -1,7 +1,10 @@
 function InitializeLevel()
   -- create first level layout
   InputNode(100, 100)
-  OutputNode(300, 100)
+  local node = OutputNode(300, 100)
+  Tick.delay(function ()
+    node:delete()
+  end, 4)
 end
 
 function DrawNode(isOn, x, y)

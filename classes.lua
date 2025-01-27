@@ -62,11 +62,10 @@ function Node:new(x, y, isOn, numMaxWiresOut, numMaxWiresIn)
   self.numMaxWiresIn = numMaxWiresIn
   self.wiresOut = {}
   self.wiresIn = {}
-  table.insert(Shapes, self)
-  -- TODO: don't know why this crashes. it seems like the super class is set to itself but how??
-  -- NOTE: this also affects Node:delete
-  -- print(DumpObject(self))
-  -- self.super.new(self)
+  -- Note: I have no clue why this is necessary for this class and
+  -- not for Wire. Shape:extend should automatically set super to Shape
+  self.super = Shape
+  self.super.new(self)
 end
 
 function Node:draw()
