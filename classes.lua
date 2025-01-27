@@ -53,26 +53,18 @@ Node = Shape:extend()
 function Node:new(x, y, isOn)
   self.x = x
   self.y = y
-  self.radius = NODE_RADIUS
   self.isOn = isOn
 end
 
 function Node:draw()
-  if self.isOn then
-    COLOR_WIRE_ON:activate()
-  else
-    COLOR_WIRE_OFF:activate()
-  end
-  love.graphics.circle("fill", self.x, self.y, self.radius)
-  COLOR_FOREGROUND:activate()
-  love.graphics.circle("line", self.x, self.y, self.radius)
+  DrawNode(self.isOn, self.x, self.y)
 end
 
 function Node:hitsHitbox(x, y)
-  return x >= self.x - self.radius and
-    x <= self.x + self.radius and
-    y >= self.y - self.radius and
-    y <= self.y + self.radius
+  return x >= self.x - NODE_RADIUS and
+    x <= self.x + NODE_RADIUS and
+    y >= self.y - NODE_RADIUS and
+    y <= self.y + NODE_RADIUS
 end
 --end Node def
 
@@ -81,20 +73,12 @@ end
 InputNode = Node:extend()
 
 function InputNode:new(x, y)
-  -- I spent like 40 minutes debugging these 4 lines of code
-  -- For some reason self.super:new(x, y, true) does not work.
-  -- It sets all instances of Node to have the same values and i don't
-  -- understand why. I think it has something to do with metatables
-  -- but i feel like im going crazy
-  self.x = x
-  self.y = y
-  self.radius = NODE_RADIUS
-  self.isOn = true
+  self.super.new(self, x, y, true)
 end
 
 function InputNode:onMousePress(x, y)
   if self:hitsHitbox(x, y) then
-    self.isOn = not self.isOn
+    table.insert(Shapes, Wire(self))
     return true
   end
 end
@@ -105,9 +89,50 @@ end
 OutputNode = Node:extend()
 
 function OutputNode:new(x, y)
-  self.x = x
-  self.y = y
-  self.radius = NODE_RADIUS
-  self.isOn = false
+  self.super.new(self, x, y, false)
+  self.parentNode = nil
+end
+
+function OutputNode:draw()
+  DrawNode(self.parentNode and self.parentNode.isOn, self.x, self.y)
 end
 -- end OutputNode def
+
+
+-- start Wire def
+Wire = Shape:extend()
+
+function Wire:new(startNode)
+  self.startNode = startNode
+  self.stopNode = nil
+end
+
+function Wire:draw()
+  if (self.startNode.isOn) then
+    COLOR_WIRE_ON:activate()
+  else
+    COLOR_WIRE_OFF:activate()
+  end
+  local startX = self.startNode.x
+  local startY = self.startNode.y
+  local stopX, stopY
+  if (self.stopNode) then
+    stopX = self.stopNode.x
+    stopY = self.stopNode.y
+  else
+    stopX = MouseX
+    stopY = MouseY
+  end
+  love.graphics.setLineWidth(WIRE_WIDTH)
+  love.graphics.line(startX, startY, stopX, stopY)
+end
+
+function Wire:onMousePress(x, y)
+  for i = #Shapes, 1, -1 do
+    if Shapes[i]:is(OutputNode) and Shapes[i]:hitsHitbox(x, y) then
+      self.stopNode = Shapes[i]
+      Shapes[i].parentNode = self.startNode
+    end
+  end
+end
+-- end Wire def

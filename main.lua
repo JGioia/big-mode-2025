@@ -5,6 +5,8 @@ function love.load()
   Tick = require("libraries.tick")
   Object = require("libraries.classic")
   Shapes = {}
+  MouseX = 0
+  MouseY = 0
 
   -- requires
   require("classes")
@@ -24,6 +26,11 @@ function love.mousepressed(x, y)
       break
     end
   end
+end
+
+function love.mousemoved(x, y)
+  MouseX = x
+  MouseY = y
 end
 
 function love.update(dt)
