@@ -9,6 +9,7 @@ function love.load()
   MouseY = 0
 
   -- requires
+  require("mylibrary")
   require("classes")
   require("functions")
   require("constants")

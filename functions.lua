@@ -1,8 +1,8 @@
 function InitializeLevel()
   -- create first level layout
-  table.insert(Shapes, InputNode(100, 100))
-  table.insert(Shapes, OutputNode(300, 100))
-  print(#Shapes)
+  -- InputNode(100, 100)
+  local node = OutputNode(300, 100)
+  Tick.delay(node:delete(), 2)
 end
 
 function DrawNode(isOn, x, y)

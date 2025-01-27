@@ -23,7 +23,7 @@ end
 Shape = Object:extend()
 
 function Shape:new()
-  -- to implement in child classes
+  table.insert(Shapes, self)
 end
 
 function Shape:update(dt)
@@ -44,16 +44,29 @@ function Shape:onMousePress(x, y)
   -- returns whether to prevent further mouse press actions from being processed
   return false
 end
+
+function Shape:delete()
+  table.removeKey(Shapes, self)
+end
 -- end Shape def
 
 
 -- start Node def
 Node = Shape:extend()
 
-function Node:new(x, y, isOn)
+function Node:new(x, y, isOn, numMaxWiresOut, numMaxWiresIn)
   self.x = x
   self.y = y
   self.isOn = isOn
+  self.numMaxWiresOut = numMaxWiresOut
+  self.numMaxWiresIn = numMaxWiresIn
+  self.wiresOut = {}
+  self.wiresIn = {}
+  table.insert(Shapes, self)
+  -- TODO: don't know why this crashes. it seems like the super class is set to itself but how??
+  -- NOTE: this also affects Node:delete
+  -- print(DumpObject(self))
+  -- self.super.new(self)
 end
 
 function Node:draw()
@@ -66,6 +79,25 @@ function Node:hitsHitbox(x, y)
     y >= self.y - NODE_RADIUS and
     y <= self.y + NODE_RADIUS
 end
+
+function Node:onMousePress(x, y)
+  if self:hitsHitbox(x, y) and #self.wiresOut < self.numMaxWiresOut then
+    table.insert(self.wiresOut, Wire(self))
+    return true
+  end
+end
+
+function Node:delete()
+  local wiresOutCopy = table.copy(self.wiresOut)
+  for i = 1, #wiresOutCopy do
+    wiresOutCopy[i]:delete()
+  end
+  local wiresInCopy = table.copy(self.wiresIn)
+  for i = 1, #wiresInCopy do
+    wiresInCopy[i]:delete()
+  end
+  self.super.delete(self)
+end
 --end Node def
 
 
@@ -73,14 +105,7 @@ end
 InputNode = Node:extend()
 
 function InputNode:new(x, y)
-  self.super.new(self, x, y, true)
-end
-
-function InputNode:onMousePress(x, y)
-  if self:hitsHitbox(x, y) then
-    table.insert(Shapes, Wire(self))
-    return true
-  end
+  self.super.new(self, x, y, true, 1, 0)
 end
 -- end InputNode def
 
@@ -89,12 +114,11 @@ end
 OutputNode = Node:extend()
 
 function OutputNode:new(x, y)
-  self.super.new(self, x, y, false)
-  self.parentNode = nil
+  self.super.new(self, x, y, false, 0, 1)
 end
 
 function OutputNode:draw()
-  DrawNode(self.parentNode and self.parentNode.isOn, self.x, self.y)
+  DrawNode(#self.wiresIn > 0 and self.wiresIn[1].startNode.isOn, self.x, self.y)
 end
 -- end OutputNode def
 
@@ -105,6 +129,7 @@ Wire = Shape:extend()
 function Wire:new(startNode)
   self.startNode = startNode
   self.stopNode = nil
+  self.super.new(self)
 end
 
 function Wire:draw()
@@ -128,11 +153,25 @@ function Wire:draw()
 end
 
 function Wire:onMousePress(x, y)
-  for i = #Shapes, 1, -1 do
-    if Shapes[i]:is(OutputNode) and Shapes[i]:hitsHitbox(x, y) then
-      self.stopNode = Shapes[i]
-      Shapes[i].parentNode = self.startNode
+  if self.stopNode == nil then
+    for i = #Shapes, 1, -1 do
+      if Shapes[i]:is(OutputNode) and 
+          Shapes[i]:hitsHitbox(x, y) and 
+          #Shapes[i].wiresIn < Shapes[i].numMaxWiresIn then
+        self.stopNode = Shapes[i]
+        table.insert(Shapes[i].wiresIn, self)
+        return true
+      end
     end
+    self:delete()
   end
+end
+
+function Wire:delete()
+  table.removeKey(self.startNode.wiresOut, self)
+  if self.stopNode then
+    table.removeKey(self.stopNode.wiresIn, self)
+  end
+  self.super.delete(self)
 end
 -- end Wire def
