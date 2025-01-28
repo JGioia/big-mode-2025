@@ -1,4 +1,4 @@
--- start color def
+-- start Color def
 Color = Object:extend()
 
 function Color:new(hex_string, alpha)
@@ -16,7 +16,32 @@ end
 function Color:activateAsBackground()
   love.graphics.setBackgroundColor(self.r, self.g, self.b, self.alpha)
 end
--- end color def
+-- end Color def
+
+
+-- start Sound def
+Sound = Object:extend()
+
+function Sound:new(filepath, sourceType)
+  self.sources = {love.audio.newSource(filepath, sourceType)}
+end
+
+function Sound:play()
+  -- Try to find a stopped Source in our list, and play it if we find one.
+  for _, source in ipairs(self.sources) do
+    if not source:isPlaying() then
+        source:play()
+        return
+    end
+  end
+
+  -- If there are no stopped Sources, create a new one and add it to the list.
+  local source = self.sources[1]:clone()
+  table.insert(self.sources, source)
+  source:setLooping(false)
+  source:play()
+end
+-- end Sound def
 
 
 -- start Shape def
@@ -103,8 +128,16 @@ end
 -- start InputNode def
 InputNode = Node:extend()
 
-function InputNode:new(x, y)
+function InputNode:new(x, y, changeFreq, startTick)
+  self.changeFreq = changeFreq
+  self.startTick = startTick
   self.super.new(self, x, y, true, 1, 0)
+end
+
+function InputNode:update()
+  if (TickNum + self.startTick) % self.changeFreq == 0 then
+    self.isOn = not self.isOn
+  end
 end
 -- end InputNode def
 
@@ -112,12 +145,21 @@ end
 -- start OutputNode def
 OutputNode = Node:extend()
 
-function OutputNode:new(x, y)
+function OutputNode:new(x, y, sound)
+  self.sound = sound
   self.super.new(self, x, y, false, 0, 1)
 end
 
+function OutputNode:update()
+  local prevIsOnVal = self.isOn
+  self.isOn = #self.wiresIn > 0 and self.wiresIn[1].startNode.isOn
+  if (self.isOn and not prevIsOnVal) then
+    self.sound:play()
+  end
+end
+
 function OutputNode:draw()
-  DrawNode(#self.wiresIn > 0 and self.wiresIn[1].startNode.isOn, self.x, self.y)
+  DrawNode(self.isOn, self.x, self.y)
 end
 -- end OutputNode def
 

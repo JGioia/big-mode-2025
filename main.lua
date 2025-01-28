@@ -7,6 +7,7 @@ function love.load()
   Shapes = {}
   MouseX = 0
   MouseY = 0
+  TickNum = 0
 
   -- requires
   require("libraries.mylibrary")
@@ -38,6 +39,7 @@ function love.update(dt)
   -- this function is called once per tick before love.draw
   -- dt is delta time in seconds
   Tick.update(dt)
+  TickNum = TickNum + 1
   for i = 1, #Shapes do
     Shapes[i]:update(dt)
   end

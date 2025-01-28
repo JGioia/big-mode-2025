@@ -38,7 +38,6 @@ function DumpObjectHelper(o, seenTables)
     local s = '{ '
     for k,v in pairs(o) do
        if k == 'self' or table.isValueIn(seenTables, v) then
-          print('hi')
           goto continue
        end
        if type(k) ~= 'number' then
