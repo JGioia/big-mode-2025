@@ -105,21 +105,20 @@ function Node:hitsHitbox(x, y)
 end
 
 function Node:onMousePress(x, y)
-  if self:hitsHitbox(x, y) and #self.wiresOut < self.numMaxWiresOut then
-    table.insert(self.wiresOut, Wire(self))
-    return true
+  if self:hitsHitbox(x, y) then
+    if #self.wiresOut < self.numMaxWiresOut then
+      table.insert(self.wiresOut, Wire(self))
+      return true
+    else
+      CopyListAndDelete(self.wiresOut)
+      table.insert(self.wiresOut, Wire(self))
+    end
   end
 end
 
 function Node:delete()
-  local wiresOutCopy = table.copy(self.wiresOut)
-  for i = 1, #wiresOutCopy do
-    wiresOutCopy[i]:delete()
-  end
-  local wiresInCopy = table.copy(self.wiresIn)
-  for i = 1, #wiresInCopy do
-    wiresInCopy[i]:delete()
-  end
+  CopyListAndDelete(self.wiresOut)
+  CopyListAndDelete(self.wiresIn)
   self.super.delete(self)
 end
 --end Node def

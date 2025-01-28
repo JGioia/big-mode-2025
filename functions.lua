@@ -17,3 +17,10 @@ function DrawNode(isOn, x, y)
   love.graphics.setLineWidth(NODE_OUTLINE_WIDTH)
   love.graphics.circle("line", x, y, NODE_RADIUS)
 end
+
+function CopyListAndDelete(shapesList)
+  local shapesCopy = table.copy(shapesList)
+  for i = 1, #shapesCopy do
+    shapesCopy[i]:delete()
+  end
+end
