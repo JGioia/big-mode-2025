@@ -94,7 +94,15 @@ function Node:new(x, y, isOn, numMaxWiresOut, numMaxWiresIn)
 end
 
 function Node:draw()
-  DrawNode(self.isOn, self.x, self.y)
+  if self.isOn then
+    COLOR_WIRE_ON:activate()
+  else
+    COLOR_WIRE_OFF:activate()
+  end
+  love.graphics.circle("fill", self.x, self.y, NODE_RADIUS)
+  COLOR_FOREGROUND:activate()
+  love.graphics.setLineWidth(NODE_OUTLINE_WIDTH)
+  love.graphics.circle("line", self.x, self.y, NODE_RADIUS)
 end
 
 function Node:hitsHitbox(x, y)
@@ -127,14 +135,14 @@ end
 -- start InputNode def
 InputNode = Node:extend()
 
-function InputNode:new(x, y, changeFreq, startTick)
-  self.changeFreq = changeFreq
-  self.startTick = startTick
+function InputNode:new(x, y, ticksPerChange, tickOffset)
+  self.ticksPerChange = ticksPerChange
+  self.tickOffset = tickOffset
   self.super.new(self, x, y, true, 1, 0)
 end
 
 function InputNode:update()
-  if (TickNum + self.startTick) % self.changeFreq == 0 then
+  if (TickNum + self.tickOffset) % self.ticksPerChange == 0 then
     self.isOn = not self.isOn
   end
 end
@@ -156,11 +164,97 @@ function OutputNode:update()
     self.sound:play()
   end
 end
-
-function OutputNode:draw()
-  DrawNode(self.isOn, self.x, self.y)
-end
 -- end OutputNode def
+
+
+-- start InverseNode def
+InverseNode = Node:extend()
+
+function InverseNode:new(x, y)
+  self.super.new(self, x, y, false, 1, 1)
+end
+
+function InverseNode:update()
+  self.isOn = #self.wiresIn > 0 and not self.wiresIn[1].startNode.isOn
+end
+-- end InverseNode def
+
+
+-- start SplitterNode def
+SplitterNode = Node:extend()
+
+function SplitterNode:new(x, y)
+  self.super.new(self, x, y, false, 2, 1)
+end
+
+function SplitterNode:update()
+  self.isOn = #self.wiresIn > 0 and self.wiresIn[1].startNode.isOn
+end
+-- end SplitterNode def
+
+
+-- start DelayNode def
+DelayNode = Node:extend()
+
+function DelayNode:new(x, y, ticksToDelay)
+  -- Assuming ticksToDelay >= 1
+  self.futureIsOn = {}
+  for _ = 1, ticksToDelay do
+    table.insert(self.futureIsOn, false);
+  end
+  self.super.new(self, x, y, false, 1, 1)
+end
+
+function DelayNode:update()
+  self.isOn = self.futureIsOn[1]
+  for i = 1, #self.futureIsOn - 1 do
+    self.futureIsOn[i] = self.futureIsOn[i + 1]
+  end
+  self.futureIsOn[#self.futureIsOn] = #self.wiresIn > 0 and self.wiresIn[1].startNode.isOn
+end
+-- end DelayNode def
+
+
+-- start AndNode def
+AndNode = Node:extend()
+
+function AndNode:new(x, y)
+  self.super.new(self, x, y, false, 1, 2)
+end
+
+function AndNode:update()
+  self.isOn = #self.wiresIn >= 2 and self.wiresIn[1].startNode.isOn and self.wiresIn[2].startNode.isOn
+end
+-- end AndNode def
+
+
+-- start OrNode def
+OrNode = Node:extend()
+
+function OrNode:new(x, y)
+  self.super.new(self, x, y, false, 1, 2)
+end
+
+function OrNode:update()
+  self.isOn = (#self.wiresIn >= 1 and self.wiresIn[1].startNode.isOn) or 
+              (#self.wiresIn >= 2 and self.wiresIn[2].startNode.isOn)
+end
+-- end OrNode def
+
+
+-- start OrNode def
+XorNode = Node:extend()
+
+function XorNode:new(x, y)
+  self.super.new(self, x, y, false, 1, 2)
+end
+
+function XorNode:update()
+  local wire1IsOn = #self.wiresIn >= 1 and self.wiresIn[1].startNode.isOn
+  local wire2IsOn = #self.wiresIn >= 2 and self.wiresIn[2].startNode.isOn
+  self.isOn = Xor(wire1IsOn, wire2IsOn)
+end
+-- end OrNode def
 
 
 -- start Wire def
@@ -195,8 +289,7 @@ end
 function Wire:onMousePress(x, y)
   if self.stopNode == nil then
     for i = #Shapes, 1, -1 do
-      if Shapes[i]:is(OutputNode) and 
-          Shapes[i]:hitsHitbox(x, y) and 
+      if Shapes[i]:hitsHitbox(x, y) and 
           #Shapes[i].wiresIn < Shapes[i].numMaxWiresIn then
         self.stopNode = Shapes[i]
         table.insert(Shapes[i].wiresIn, self)
@@ -204,6 +297,7 @@ function Wire:onMousePress(x, y)
       end
     end
     self:delete()
+    return true
   end
 end
 

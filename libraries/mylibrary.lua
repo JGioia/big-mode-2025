@@ -28,6 +28,10 @@ function table.isValueIn(t, v)
   return false
 end
 
+function Xor(bool1, bool2)
+  return (bool1 and not bool2) or (not bool1 and bool2)
+end
+
 function DumpObject(o)
   -- converts the object to a string (used for debugging)
   return DumpObjectHelper(o, {})

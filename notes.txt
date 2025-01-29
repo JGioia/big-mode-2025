@@ -1,0 +1,4 @@
+-- Q: should wires really be directional? it's possible to make infinite loop lol
+  -- A: yes, this could be a cool level concept
+-- Q: should users be allowed to have 2 wires between the same 2 entities?
+  -- A: yes, this will become less of an issue as the graphics are changed
